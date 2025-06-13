@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,32 +7,126 @@
   <title>Registro de Vítima</title>
   <style>
     body { font-family: sans-serif; padding: 1rem; background: #f9f9f9; }
-    input, textarea { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #ccc; }
-    button { padding: 0.5rem 1rem; margin-right: 0.5rem; border-radius: 5px; border: none; cursor: pointer; }
+    label.title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #444;
+      display: block;
+      margin-bottom: 0.2rem;
+      margin-top: 0.8rem;
+    }
+    input, select, textarea {
+      width: 100%; padding: 0.5rem; margin-bottom: 0.3rem;
+      border-radius: 5px; border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 1rem;
+    }
+    textarea { resize: vertical; min-height: 80px; }
+    button {
+      padding: 0.5rem 1rem; margin-right: 0.5rem;
+      border-radius: 5px; border: none;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+    }
     button.save { background: #007bff; color: white; }
     button.edit { background: #28a745; color: white; }
     button.copy { background: #6c757d; color: white; }
+    button.delete { background: #dc3545; color: white; }
     .registro {
-      background: white; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      background: white; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
       white-space: pre-line;
     }
     .acoes {
       margin-top: 0.5rem;
+    }
+    .input-group {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-group input, .input-group select {
+      flex-grow: 1;
+    }
+    .input-group span {
+      margin-left: 0.4rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.9rem;
+      margin-bottom: 0.7rem;
+      user-select: none;
     }
   </style>
 </head>
 <body>
   <h1>Registro de Vítima</h1>
   <form id="form">
+
+    <label class="title" for="nome">Nome</label>
     <input type="text" id="nome" placeholder="Nome" required />
-    <input type="text" id="documento" placeholder="CPF ou outro documento" required />
+
+    <label class="title" for="documento">CPF ou outro documento</label>
+    <input type="text" id="documento" placeholder="Digite CPF ou outro documento" required />
+
+    <label class="title" for="endereco">Endereço</label>
     <input type="text" id="endereco" placeholder="Endereço" required />
-    <input type="text" id="pressao" placeholder="Pressão Arterial" />
-    <input type="text" id="fc" placeholder="Frequência Cardíaca" />
-    <input type="text" id="saturacao" placeholder="Saturação" />
-    <input type="text" id="movimentos" placeholder="Movimentos Respiratórios" />
-    <input type="text" id="glasgow" placeholder="Escala de Glasgow" />
+
+    <!-- Pressão Arterial -->
+    <label class="title" for="pressao">Pressão Arterial</label>
+    <div class="input-group">
+      <input type="text" id="pressao" placeholder="Ex: 120/80 mmHg" />
+      <span>mmHg</span>
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" id="pressaoPrejudicado" /> Prejudicado
+    </label>
+
+    <!-- Frequência Cardíaca -->
+    <label class="title" for="fc">Frequência Cardíaca</label>
+    <div class="input-group">
+      <input type="number" id="fc" placeholder="Ex: 72" min="0" />
+      <span>bpm</span>
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" id="fcPrejudicado" /> Prejudicado
+    </label>
+
+    <!-- Saturação -->
+    <label class="title" for="saturacao">Saturação</label>
+    <div class="input-group">
+      <input type="number" id="saturacao" placeholder="Ex: 98" min="0" max="100" />
+      <span>%</span>
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" id="saturacaoPrejudicado" /> Prejudicado
+    </label>
+
+    <!-- Movimentos Respiratórios -->
+    <label class="title" for="movimentos">Movimentos Respiratórios</label>
+    <div class="input-group">
+      <input type="number" id="movimentos" placeholder="Ex: 16" min="0" />
+      <span>irpm</span>
+    </div>
+    <label class="checkbox-label">
+      <input type="checkbox" id="movimentosPrejudicado" /> Prejudicado
+    </label>
+
+    <!-- Glasgow -->
+    <label class="title" for="glasgow">Escala de Glasgow</label>
+    <select id="glasgow" required>
+      <option value="">Selecione</option>
+      ${[...Array(15)].map((_, i) => `<option value="${i+1}">${i+1}</option>`).join('')}
+    </select>
+
+    <label class="title" for="observacao">Observações</label>
     <textarea id="observacao" placeholder="Observações"></textarea>
+
     <button type="submit" class="save">Salvar</button>
     <button type="button" id="cancelEdit" style="display:none;">Cancelar Edição</button>
   </form>
@@ -41,142 +134,144 @@
   <h2>Registros Salvos</h2>
   <div id="registros"></div>
 
-  <script>
-    const form = document.getElementById('form');
-    const registrosDiv = document.getElementById('registros');
-    const cancelEditBtn = document.getElementById('cancelEdit');
+<script>
+  const form = document.getElementById('form');
+  const registrosDiv = document.getElementById('registros');
+  const cancelEditBtn = document.getElementById('cancelEdit');
 
-    let editIndex = null; // índice do registro que está sendo editado
+  let editIndex = null; // índice do registro que está sendo editado
 
-    function formatarCPF(valor) {
-      const cpf = valor.replace(/\D/g, '');
-      if (cpf.length === 11) {
-        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-      }
-      return valor;
+  // Função para formatar CPF
+  function formatarCPF(valor) {
+    const cpf = valor.replace(/\\D/g, '');
+    if (cpf.length === 11) {
+      return cpf.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, "$1.$2.$3-$4");
     }
+    return valor;
+  }
 
-    function salvarRegistros(registros) {
-      localStorage.setItem('registros', JSON.stringify(registros));
-    }
+  // Função para validar CPF (simples)
+  function validarCPF(cpf) {
+    cpf = cpf.replace(/[^\d]+/g,'');
+    if(cpf.length !== 11) return false;
+    // Elimina CPFs invalidos conhecidos
+    if (/^(\d)\\1{10}$/.test(cpf)) return false;
+    let soma = 0, resto;
+    for (let i=1; i<=9; i++) soma += parseInt(cpf.substring(i-1, i)) * (11 - i);
+    resto = (soma * 10) % 11;
+    if ((resto == 10) || (resto == 11)) resto = 0;
+    if (resto != parseInt(cpf.substring(9, 10))) return false;
+    soma = 0;
+    for (let i=1; i<=10; i++) soma += parseInt(cpf.substring(i-1, i)) * (12 - i);
+    resto = (soma * 10) % 11;
+    if ((resto == 10) || (resto == 11)) resto = 0;
+    if (resto != parseInt(cpf.substring(10, 11))) return false;
+    return true;
+  }
 
-    function carregarRegistros() {
-      return JSON.parse(localStorage.getItem('registros') || '[]');
-    }
+  function salvarRegistros(registros) {
+    localStorage.setItem('registros', JSON.stringify(registros));
+  }
 
-    function montarTextoParaCopiar(r) {
-      return (
+  function carregarRegistros() {
+    return JSON.parse(localStorage.getItem('registros') || '[]');
+  }
+
+  function montarTextoParaCopiar(r) {
+    return (
+      `Nome: ${r.nome}\n` +
+      `Documento: ${r.documento}\n` +
+      `Endereço: ${r.endereco}\n` +
+      `Pressão Arterial: ${r.pressao}\n` +
+      `Frequência Cardíaca: ${r.fc}\n` +
+      `Saturação: ${r.saturacao}\n` +
+      `Movimentos Respiratórios: ${r.movimentos}\n` +
+      `Escala de Glasgow: ${r.glasgow}\n` +
+      `Observações: ${r.observacao}`
+    );
+  }
+
+  function mostrarRegistros() {
+    const registros = carregarRegistros();
+    registrosDiv.innerHTML = '';
+    registros.forEach((r, i) => {
+      const div = document.createElement('div');
+      div.className = 'registro';
+      div.textContent =
         `Nome: ${r.nome}\n` +
         `Documento: ${r.documento}\n` +
         `Endereço: ${r.endereco}\n` +
-        `Pressão Arterial: ${r.pressao}\n` +
-        `Frequência Cardíaca: ${r.fc}\n` +
-        `Saturação: ${r.saturacao}\n` +
-        `Movimentos Respiratórios: ${r.movimentos}\n` +
-        `Escala de Glasgow: ${r.glasgow}\n` +
-        `Observações: ${r.observacao}`
-      );
-    }
+        `Pressão Arterial: ${r.pressao} | Frequência Cardíaca: ${r.fc} | Saturação: ${r.saturacao} | Movimentos Respiratórios: ${r.movimentos} | Escala de Glasgow: ${r.glasgow}\n` +
+        `Observações: ${r.observacao}`;
 
-    function mostrarRegistros() {
-      const registros = carregarRegistros();
-      registrosDiv.innerHTML = '';
-      registros.forEach((r, i) => {
-        const div = document.createElement('div');
-        div.className = 'registro';
-        div.textContent =
-          `Nome: ${r.nome}\n` +
-          `Documento: ${r.documento}\n` +
-          `Endereço: ${r.endereco}\n` +
-          `Pressão Arterial: ${r.pressao} | Frequência Cardíaca: ${r.fc} | Saturação: ${r.saturacao} | Movimentos Respiratórios: ${r.movimentos} | Escala de Glasgow: ${r.glasgow}\n` +
-          `Observações: ${r.observacao}`;
+      const acoes = document.createElement('div');
+      acoes.className = 'acoes';
 
-        const acoes = document.createElement('div');
-        acoes.className = 'acoes';
+      // Botão Editar
+      const btnEditar = document.createElement('button');
+      btnEditar.textContent = 'Editar';
+      btnEditar.className = 'edit';
+      btnEditar.addEventListener('click', () => {
+        editIndex = i;
+        form.nome.value = r.nome;
+        form.documento.value = r.documento;
+        form.endereco.value = r.endereco;
 
-        const btnEditar = document.createElement('button');
-        btnEditar.textContent = 'Editar';
-        btnEditar.className = 'edit';
-        btnEditar.addEventListener('click', () => {
-          editIndex = i;
-          form.nome.value = r.nome;
-          form.documento.value = r.documento;
-          form.endereco.value = r.endereco;
-          form.pressao.value = r.pressao;
-          form.fc.value = r.fc;
-          form.saturacao.value = r.saturacao;
-          form.movimentos.value = r.movimentos;
-          form.glasgow.value = r.glasgow;
-          form.observacao.value = r.observacao;
-          cancelEditBtn.style.display = 'inline-block';
-          form.querySelector('button[type="submit"]').textContent = 'Atualizar';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+        form.pressao.checked = false;
+        form.fc.checked = false;
+        form.saturacao.checked = false;
+        form.movimentos.checked = false;
 
-        const btnCopiar = document.createElement('button');
-        btnCopiar.textContent = 'Copiar avaliação';
-        btnCopiar.className = 'copy';
-        btnCopiar.addEventListener('click', () => {
-          const texto = montarTextoParaCopiar(r);
-          navigator.clipboard.writeText(texto).then(() => {
-            alert('Avaliação copiada para a área de transferência!');
-          });
-        });
+        form.pressao.value = r.pressao === "prejudicado" ? "" : r.pressao;
+        form.fc.value = r.fc === "prejudicado" ? "" : r.fc;
+        form.saturacao.value = r.saturacao === "prejudicado" ? "" : r.saturacao;
+        form.movimentos.value = r.movimentos === "prejudicado" ? "" : r.movimentos;
 
-        acoes.appendChild(btnEditar);
-        acoes.appendChild(btnCopiar);
+        form.pressaoPrejudicado.checked = r.pressao === "prejudicado";
+        form.fcPrejudicado.checked = r.fc === "prejudicado";
+        form.saturacaoPrejudicado.checked = r.saturacao === "prejudicado";
+        form.movimentosPrejudicado.checked = r.movimentos === "prejudicado";
 
-        div.appendChild(acoes);
-        registrosDiv.appendChild(div);
+        form.glasgow.value = r.glasgow;
+        form.observacao.value = r.observacao;
+        cancelEditBtn.style.display = 'inline-block';
+        form.querySelector('button[type="submit"]').textContent = 'Atualizar';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       });
-    }
 
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const registros = carregarRegistros();
-
-      const registro = {
-        nome: form.nome.value,
-        documento: formatarCPF(form.documento.value),
-        endereco: form.endereco.value,
-        pressao: form.pressao.value,
-        fc: form.fc.value,
-        saturacao: form.saturacao.value,
-        movimentos: form.movimentos.value,
-        glasgow: form.glasgow.value,
-        observacao: form.observacao.value
-      };
-
-      if (editIndex !== null) {
-        registros[editIndex] = registro;
-        editIndex = null;
-        form.querySelector('button[type="submit"]').textContent = 'Salvar';
-        cancelEditBtn.style.display = 'none';
-      } else {
-        registros.push(registro);
-      }
-
-      salvarRegistros(registros);
-      form.reset();
-      mostrarRegistros();
-    });
-
-    cancelEditBtn.addEventListener('click', () => {
-      editIndex = null;
-      form.reset();
-      form.querySelector('button[type="submit"]').textContent = 'Salvar';
-      cancelEditBtn.style.display = 'none';
-    });
-
-    mostrarRegistros();
-  </script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
+      // Botão Copiar Avaliação
+      const btnCopiar = document.createElement('button');
+      btnCopiar.textContent = 'Copiar avaliação';
+      btnCopiar.className = 'copy';
+      btnCopiar.addEventListener('click', () => {
+        const texto = montarTextoParaCopiar(r);
+        navigator.clipboard.writeText(texto).then(() => {
+          alert('Avaliação copiada para a área de transferência!');
+        });
       });
-    }
-  </script>
-</body>
-</html>
+
+      // Botão Excluir
+      const btnExcluir = document.createElement('button');
+      btnExcluir.textContent = 'Excluir';
+      btnExcluir.className = 'delete';
+      btnExcluir.addEventListener('click', () => {
+        if(confirm('Deseja realmente excluir essa avaliação?')) {
+          const registros = carregarRegistros();
+          registros.splice(i,1);
+          salvarRegistros(registros);
+          mostrarRegistros();
+        }
+      });
+
+      acoes.appendChild(btnEditar);
+      acoes.appendChild(btnCopiar);
+      acoes.appendChild(btnExcluir);
+
+      div.appendChild(acoes);
+      registrosDiv.appendChild(div);
+    });
+  }
+
+  function togglePrejudicado(checkbox, input) {
+    if(checkbox.checked) {
+      input.value = 'prejudicado';
