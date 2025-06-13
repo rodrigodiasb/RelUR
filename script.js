@@ -1,85 +1,151 @@
+document.addEventListener("DOMContentLoaded", () => {
+  preencherDataHora();
+  carregarAvaliacoes();
+});
 
-const form = document.getElementById("form");
-const lista = document.getElementById("lista-avaliacoes");
-const glasgowSelect = document.getElementById("glasgow");
-for (let i = 1; i <= 15; i++) {
-  const option = document.createElement("option");
-  option.value = i;
-  option.textContent = i;
-  glasgowSelect.appendChild(option);
-}
-function formatCPF(value) {
-  return value.replace(/\D/g, "").replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-}
-function isCPF(str) {
-  return /^\d{11}$/.test(str.replace(/\D/g, ""));
-}
-function togglePrejudicado(inputId, checkboxId) {
-  const input = document.getElementById(inputId);
-  const checkbox = document.getElementById(checkboxId);
-  checkbox.addEventListener("change", () => {
-    if (checkbox.checked) {
-      input.value = "Prejudicado";
-      input.disabled = true;
-    } else {
-      input.value = "";
-      input.disabled = false;
-    }
+function preencherDataHora() {
+  const agora = new Date();
+  const dataHora = agora.toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
   });
+  document.getElementById("dataHora").value = dataHora;
 }
-["pressao", "frequencia", "saturacao", "respiracao"].forEach(field => {
-  togglePrejudicado(field, field + "_prejudicada");
-});
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const data = Object.fromEntries(new FormData(form));
-  if (isCPF(data.documento)) {
-    data.documento = formatCPF(data.documento);
+
+function salvarAvaliacao() {
+  const dados = obterDadosFormulario();
+  if (!dados.nome) {
+    alert("Nome é obrigatório.");
+    return;
   }
+
   const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-  avaliacoes.push(data);
+  avaliacoes.push(dados);
   localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
-  form.reset();
-  renderAvaliacoes();
-});
-function renderAvaliacoes() {
-  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-  lista.innerHTML = "";
-  avaliacoes.forEach((a, index) => {
-    const div = document.createElement("div");
-    div.className = "avaliacao";
-    div.innerHTML = `
-      <strong>${a.nome}</strong><br>
-      <small>${a.documento}</small><br>
-      <button onclick="editar(${index})">Editar</button>
-      <button onclick="copiar(${index})">Copiar Avaliação</button>
-      <button onclick="excluir(${index})">Excluir</button>
-    `;
-    lista.appendChild(div);
-  });
+
+  mostrarMensagemSucesso();
+  limparCampos();
+  carregarAvaliacoes();
 }
-function editar(index) {
+
+function obterDadosFormulario() {
+  const getVal = id => document.getElementById(id).value.trim();
+  const check = id => document.getElementById(id).checked;
+
+  const checarOuTexto = (idInput, idCheck, texto) => check(idCheck) ? texto : getVal(idInput);
+
+  return {
+    nome: getVal("nome"),
+    documento: getVal("documento"),
+    endereco: getVal("endereco"),
+    dataHora: getVal("dataHora"),
+
+    pressao: checarOuTexto("pressao", "pressaoPrejudicado", "prejudicado"),
+    frequencia: checarOuTexto("frequencia", "frequenciaPrejudicado", "prejudicado"),
+    saturacao: checarOuTexto("saturacao", "saturacaoPrejudicado", "prejudicado"),
+    respiracao: checarOuTexto("respiracao", "respiracaoPrejudicado", "prejudicado"),
+    glasgow: check("glasgowPrejudicado") ? "prejudicado" : getVal("glasgow"),
+
+    observacao: getVal("observacao")
+  };
+}
+
+function limparCampos() {
+  const campos = ["nome", "documento", "endereco", "pressao", "frequencia", "saturacao", "respiracao", "glasgow", "observacao"];
+  campos.forEach(id => document.getElementById(id).value = "");
+  ["pressaoPrejudicado", "frequenciaPrejudicado", "saturacaoPrejudicado", "respiracaoPrejudicado", "glasgowPrejudicado"]
+    .forEach(id => document.getElementById(id).checked = false);
+  preencherDataHora();
+}
+
+function mostrarMensagemSucesso() {
+  const msg = document.getElementById("mensagem-sucesso");
+  msg.classList.remove("oculto");
+  setTimeout(() => msg.classList.add("oculto"), 3000);
+}
+
+function carregarAvaliacoes(filtro = "") {
+  const lista = document.getElementById("lista-avaliacoes");
+  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
+
+  lista.innerHTML = "";
+  avaliacoes
+    .filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || a.documento.includes(filtro))
+    .forEach((a, index) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <strong>${a.nome}</strong><br>
+        <small>${a.dataHora}</small><br>
+        <button onclick="copiarEvolucao(${index})">Copiar Evolução</button>
+        <button onclick="editarAvaliacao(${index})">Editar</button>
+        <button onclick="excluirAvaliacao(${index})">Excluir</button>
+      `;
+      lista.appendChild(li);
+    });
+}
+
+function filtrarAvaliacoes() {
+  const termo = document.getElementById("pesquisa").value;
+  carregarAvaliacoes(termo);
+}
+
+function editarAvaliacao(index) {
   const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
   const a = avaliacoes[index];
-  for (const key in a) {
-    if (form[key]) form[key].value = a[key];
-  }
+
+  document.getElementById("nome").value = a.nome;
+  document.getElementById("documento").value = a.documento;
+  document.getElementById("endereco").value = a.endereco;
+  document.getElementById("dataHora").value = a.dataHora;
+
+  const preencherCampo = (campo, valor, idCheck) => {
+    if (valor === "prejudicado") {
+      document.getElementById(idCheck).checked = true;
+      document.getElementById(campo).value = "";
+    } else {
+      document.getElementById(campo).value = valor;
+      document.getElementById(idCheck).checked = false;
+    }
+  };
+
+  preencherCampo("pressao", a.pressao, "pressaoPrejudicado");
+  preencherCampo("frequencia", a.frequencia, "frequenciaPrejudicado");
+  preencherCampo("saturacao", a.saturacao, "saturacaoPrejudicado");
+  preencherCampo("respiracao", a.respiracao, "respiracaoPrejudicado");
+  preencherCampo("glasgow", a.glasgow, "glasgowPrejudicado");
+
+  document.getElementById("observacao").value = a.observacao;
+
   avaliacoes.splice(index, 1);
   localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
-  renderAvaliacoes();
+  carregarAvaliacoes();
 }
-function copiar(index) {
-  const a = JSON.parse(localStorage.getItem("avaliacoes"))[index];
-  const texto = Object.entries(a).map(([k, v]) => `${k}: ${v}`).join("\n");
-  navigator.clipboard.writeText(texto);
-  alert("Avaliação copiada!");
+
+function excluirAvaliacao(index) {
+  if (!confirm("Deseja excluir esta avaliação?")) return;
+
+  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
+  avaliacoes.splice(index, 1);
+  localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
+  carregarAvaliacoes();
 }
-function excluir(index) {
-  if (confirm("Deseja mesmo excluir esta avaliação?")) {
-    const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes"));
-    avaliacoes.splice(index, 1);
-    localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
-    renderAvaliacoes();
-  }
+
+function copiarEvolucao(index) {
+  const a = JSON.parse(localStorage.getItem("avaliacoes") || "[]")[index];
+  const texto = 
+`🧍‍♂️ Nome: ${a.nome}
+🪪 Documento: ${a.documento}
+📍 Endereço: ${a.endereco}
+🕐 Data/Hora: ${a.dataHora}
+
+🩺 Pressão: ${a.pressao}
+❤️ Frequência: ${a.frequencia}
+🫁 Saturação: ${a.saturacao}
+💨 Respiração: ${a.respiracao}
+🧠 Glasgow: ${a.glasgow}
+
+📝 Observações:
+${a.observacao}`;
+
+  navigator.clipboard.writeText(texto).then(() => alert("Evolução copiada para área de transferência!"));
 }
-renderAvaliacoes();
