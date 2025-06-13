@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="manifest" href="manifest.json" />
+  <title>Registro de Vítima</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; background: #f9f9f9; }
+    input, textarea { width: 100%; padding: 0.5rem; margin-bottom: 1rem; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 0.5rem 1rem; margin-right: 0.5rem; border-radius: 5px; border: none; cursor: pointer; }
+    button.save { background: #007bff; color: white; }
+    button.edit { background: #28a745; color: white; }
+    button.copy { background: #6c757d; color: white; }
+    .registro {
+      background: white; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      white-space: pre-line;
+    }
+    .acoes {
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Registro de Vítima</h1>
+  <form id="form">
+    <input type="text" id="nome" placeholder="Nome" required />
+    <input type="text" id="documento" placeholder="CPF ou outro documento" required />
+    <input type="text" id="endereco" placeholder="Endereço" required />
+    <input type="text" id="pressao" placeholder="Pressão Arterial" />
+    <input type="text" id="fc" placeholder="Frequência Cardíaca" />
+    <input type="text" id="saturacao" placeholder="Saturação" />
+    <input type="text" id="movimentos" placeholder="Movimentos Respiratórios" />
+    <input type="text" id="glasgow" placeholder="Escala de Glasgow" />
+    <textarea id="observacao" placeholder="Observações"></textarea>
+    <button type="submit" class="save">Salvar</button>
+    <button type="button" id="cancelEdit" style="display:none;">Cancelar Edição</button>
+  </form>
+
+  <h2>Registros Salvos</h2>
+  <div id="registros"></div>
+
+  <script>
+    const form = document.getElementById('form');
+    const registrosDiv = document.getElementById('registros');
+    const cancelEditBtn = document.getElementById('cancelEdit');
+
+    let editIndex = null; // índice do registro que está sendo editado
+
+    function formatarCPF(valor) {
+      const cpf = valor.replace(/\D/g, '');
+      if (cpf.length === 11) {
+        return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      }
+      return valor;
+    }
+
+    function salvarRegistros(registros) {
+      localStorage.setItem('registros', JSON.stringify(registros));
+    }
+
+    function carregarRegistros() {
+      return JSON.parse(localStorage.getItem('registros') || '[]');
+    }
+
+    function montarTextoParaCopiar(r) {
+      return (
+        `Nome: ${r.nome}\n` +
+        `Documento: ${r.documento}\n` +
+        `Endereço: ${r.endereco}\n` +
+        `Pressão Arterial: ${r.pressao}\n` +
+        `Frequência Cardíaca: ${r.fc}\n` +
+        `Saturação: ${r.saturacao}\n` +
+        `Movimentos Respiratórios: ${r.movimentos}\n` +
+        `Escala de Glasgow: ${r.glasgow}\n` +
+        `Observações: ${r.observacao}`
+      );
+    }
+
+    function mostrarRegistros() {
+      const registros = carregarRegistros();
+      registrosDiv.innerHTML = '';
+      registros.forEach((r, i) => {
+        const div = document.createElement('div');
+        div.className = 'registro';
+        div.textContent =
+          `Nome: ${r.nome}\n` +
+          `Documento: ${r.documento}\n` +
+          `Endereço: ${r.endereco}\n` +
+          `Pressão Arterial: ${r.pressao} | Frequência Cardíaca: ${r.fc} | Saturação: ${r.saturacao} | Movimentos Respiratórios: ${r.movimentos} | Escala de Glasgow: ${r.glasgow}\n` +
+          `Observações: ${r.observacao}`;
+
+        const acoes = document.createElement('div');
+        acoes.className = 'acoes';
+
+        const btnEditar = document.createElement('button');
+        btnEditar.textContent = 'Editar';
+        btnEditar.className = 'edit';
+        btnEditar.addEventListener('click', () => {
+          editIndex = i;
+          form.nome.value = r.nome;
+          form.documento.value = r.documento;
+          form.endereco.value = r.endereco;
+          form.pressao.value = r.pressao;
+          form.fc.value = r.fc;
+          form.saturacao.value = r.saturacao;
+          form.movimentos.value = r.movimentos;
+          form.glasgow.value = r.glasgow;
+          form.observacao.value = r.observacao;
+          cancelEditBtn.style.display = 'inline-block';
+          form.querySelector('button[type="submit"]').textContent = 'Atualizar';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        const btnCopiar = document.createElement('button');
+        btnCopiar.textContent = 'Copiar avaliação';
+        btnCopiar.className = 'copy';
+        btnCopiar.addEventListener('click', () => {
+          const texto = montarTextoParaCopiar(r);
+          navigator.clipboard.writeText(texto).then(() => {
+            alert('Avaliação copiada para a área de transferência!');
+          });
+        });
+
+        acoes.appendChild(btnEditar);
+        acoes.appendChild(btnCopiar);
+
+        div.appendChild(acoes);
+        registrosDiv.appendChild(div);
+      });
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const registros = carregarRegistros();
+
+      const registro = {
+        nome: form.nome.value,
+        documento: formatarCPF(form.documento.value),
+        endereco: form.endereco.value,
+        pressao: form.pressao.value,
+        fc: form.fc.value,
+        saturacao: form.saturacao.value,
+        movimentos: form.movimentos.value,
+        glasgow: form.glasgow.value,
+        observacao: form.observacao.value
+      };
+
+      if (editIndex !== null) {
+        registros[editIndex] = registro;
+        editIndex = null;
+        form.querySelector('button[type="submit"]').textContent = 'Salvar';
+        cancelEditBtn.style.display = 'none';
+      } else {
+        registros.push(registro);
+      }
+
+      salvarRegistros(registros);
+      form.reset();
+      mostrarRegistros();
+    });
+
+    cancelEditBtn.addEventListener('click', () => {
+      editIndex = null;
+      form.reset();
+      form.querySelector('button[type="submit"]').textContent = 'Salvar';
+      cancelEditBtn.style.display = 'none';
+    });
+
+    mostrarRegistros();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
