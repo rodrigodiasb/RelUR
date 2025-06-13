@@ -1,55 +1,123 @@
-
+/* style.css */
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
+  background: #f2f3f7;
   margin: 0;
   padding: 0;
-  background: #f7f7f7;
-}
-.container {
-  max-width: 500px;
-  margin: auto;
-  padding: 16px;
-}
-h1, h2 {
-  text-align: center;
-}
-form .form-group {
-  margin-bottom: 16px;
-}
-form label {
-  display: block;
-  font-size: 0.9em;
-  margin-bottom: 4px;
   color: #333;
 }
-form input, form textarea, form select {
-  width: 100%;
-  padding: 8px;
-  font-size: 1.1em;
-  box-sizing: border-box;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
 }
-button {
+
+header h1 {
+  text-align: center;
+  color: #0d6efd;
+  margin-bottom: 20px;
+}
+
+.section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.section h2 {
+  margin-top: 0;
+  font-size: 1.2em;
+  color: #0d6efd;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+}
+
+label {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+input[type="text"],
+select,
+textarea {
   width: 100%;
   padding: 10px;
-  font-size: 1.1em;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-}
-#lista-avaliacoes {
-  margin-top: 16px;
-}
-.avaliacao {
-  background: #fff;
+  margin-top: 5px;
+  margin-bottom: 10px;
   border: 1px solid #ccc;
-  border-radius: 6px;
+  border-radius: 5px;
+  font-size: 1em;
+}
+
+input[type="checkbox"] {
+  margin-left: 5px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+button {
+  flex: 1;
+  background: #0d6efd;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #0b5ed7;
+}
+
+#mensagem-sucesso {
+  background: #d1e7dd;
+  color: #0f5132;
+  padding: 10px;
+  border-radius: 5px;
+  margin-top: 10px;
+  text-align: center;
+}
+
+#mensagem-sucesso.oculto {
+  display: none;
+}
+
+#lista-avaliacoes {
+  list-style: none;
+  padding: 0;
+}
+
+#lista-avaliacoes li {
+  background: #fff;
   padding: 10px;
   margin-bottom: 10px;
+  border-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
-.avaliacao button {
-  margin-right: 8px;
-  margin-top: 8px;
+
+#lista-avaliacoes button {
+  background: #6c757d;
+  margin-top: 5px;
+  width: 100%;
+}
+
+#pesquisa {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
 }
