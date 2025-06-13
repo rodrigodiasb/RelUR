@@ -1,0 +1,55 @@
+
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f7f7f7;
+}
+.container {
+  max-width: 500px;
+  margin: auto;
+  padding: 16px;
+}
+h1, h2 {
+  text-align: center;
+}
+form .form-group {
+  margin-bottom: 16px;
+}
+form label {
+  display: block;
+  font-size: 0.9em;
+  margin-bottom: 4px;
+  color: #333;
+}
+form input, form textarea, form select {
+  width: 100%;
+  padding: 8px;
+  font-size: 1.1em;
+  box-sizing: border-box;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  font-size: 1.1em;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+#lista-avaliacoes {
+  margin-top: 16px;
+}
+.avaliacao {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.avaliacao button {
+  margin-right: 8px;
+  margin-top: 8px;
+}
