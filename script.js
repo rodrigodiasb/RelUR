@@ -1,151 +1,127 @@
-document.addEventListener("DOMContentLoaded", () => {
-  preencherDataHora();
-  carregarAvaliacoes();
-});
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const listaAvaliacoes = document.getElementById('lista-avaliacoes');
+  const mensagemSucesso = document.getElementById('mensagem-sucesso');
+  const campoPesquisa = document.getElementById('pesquisa');
 
-function preencherDataHora() {
-  const agora = new Date();
-  const dataHora = agora.toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
-  document.getElementById("dataHora").value = dataHora;
-}
+  const getInput = id => document.getElementById(id);
+  const getCheckbox = id => document.getElementById(id).checked;
+  const getRadioValue = name => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
 
-function salvarAvaliacao() {
-  const dados = obterDadosFormulario();
-  if (!dados.nome) {
-    alert("Nome é obrigatório.");
-    return;
+  let avaliacoes = JSON.parse(localStorage.getItem('avaliacoes')) || [];
+
+  function salvarLocalStorage() {
+    localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
   }
 
-  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-  avaliacoes.push(dados);
-  localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
+  function limparFormulario() {
+    form.reset();
+  }
 
-  mostrarMensagemSucesso();
-  limparCampos();
-  carregarAvaliacoes();
-}
+  function montarTextoAvaliacao(dados) {
+    const getCampo = (campo, sufixo = '', prejudicado = false) => {
+      return prejudicado ? `${campo}: prejudicado` : `${campo}: ${dados[campo] || ''}${sufixo}`;
+    };
 
-function obterDadosFormulario() {
-  const getVal = id => document.getElementById(id).value.trim();
-  const check = id => document.getElementById(id).checked;
+    return [
+      `Nome: ${dados.nome || ''}`,
+      `Documento: ${dados.documento || ''}`,
+      `Endereço: ${dados.endereco || ''}`,
+      '',
+      getCampo('pressao', '', dados.prejPressao),
+      getCampo('frequencia', '', dados.prejFrequencia),
+      getCampo('saturacao', '%', dados.prejSaturacao),
+      getCampo('respiracao', '', dados.prejRespiracao),
+      `Glasgow: ${dados.glasgow || ''}`,
+      '',
+      `Observações: ${dados.observacao || ''}`,
+      '',
+      `Médico regulador: ${dados.medicoRegulador || ''}`,
+      `Senha: ${dados.senha || ''}`,
+      `Unidade de Saúde: ${dados.unidadeSaude || ''}`,
+      '',
+      `Vítima admitida aos cuidados do ${dados.referenciaAdmissao || ''} ${dados.nomeAdmitiu || ''}`
+    ].join('\n');
+  }
 
-  const checarOuTexto = (idInput, idCheck, texto) => check(idCheck) ? texto : getVal(idInput);
+  function renderAvaliacoes() {
+    listaAvaliacoes.innerHTML = '';
+    const termo = campoPesquisa.value.toLowerCase();
 
-  return {
-    nome: getVal("nome"),
-    documento: getVal("documento"),
-    endereco: getVal("endereco"),
-    dataHora: getVal("dataHora"),
-
-    pressao: checarOuTexto("pressao", "pressaoPrejudicado", "prejudicado"),
-    frequencia: checarOuTexto("frequencia", "frequenciaPrejudicado", "prejudicado"),
-    saturacao: checarOuTexto("saturacao", "saturacaoPrejudicado", "prejudicado"),
-    respiracao: checarOuTexto("respiracao", "respiracaoPrejudicado", "prejudicado"),
-    glasgow: check("glasgowPrejudicado") ? "prejudicado" : getVal("glasgow"),
-
-    observacao: getVal("observacao")
-  };
-}
-
-function limparCampos() {
-  const campos = ["nome", "documento", "endereco", "pressao", "frequencia", "saturacao", "respiracao", "glasgow", "observacao"];
-  campos.forEach(id => document.getElementById(id).value = "");
-  ["pressaoPrejudicado", "frequenciaPrejudicado", "saturacaoPrejudicado", "respiracaoPrejudicado", "glasgowPrejudicado"]
-    .forEach(id => document.getElementById(id).checked = false);
-  preencherDataHora();
-}
-
-function mostrarMensagemSucesso() {
-  const msg = document.getElementById("mensagem-sucesso");
-  msg.classList.remove("oculto");
-  setTimeout(() => msg.classList.add("oculto"), 3000);
-}
-
-function carregarAvaliacoes(filtro = "") {
-  const lista = document.getElementById("lista-avaliacoes");
-  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-
-  lista.innerHTML = "";
-  avaliacoes
-    .filter(a => a.nome.toLowerCase().includes(filtro.toLowerCase()) || a.documento.includes(filtro))
-    .forEach((a, index) => {
-      const li = document.createElement("li");
+    avaliacoes.filter(av => av.nome.toLowerCase().includes(termo)).forEach((dados, index) => {
+      const li = document.createElement('li');
       li.innerHTML = `
-        <strong>${a.nome}</strong><br>
-        <small>${a.dataHora}</small><br>
-        <button onclick="copiarEvolucao(${index})">Copiar Evolução</button>
-        <button onclick="editarAvaliacao(${index})">Editar</button>
-        <button onclick="excluirAvaliacao(${index})">Excluir</button>
+        <strong>${dados.nome}</strong><br>
+        <button onclick="editar(${index})">Editar</button>
+        <button onclick="copiar(${index})">Copiar Avaliação</button>
+        <button onclick="excluir(${index})">Excluir</button>
       `;
-      lista.appendChild(li);
+      listaAvaliacoes.appendChild(li);
     });
-}
+  }
 
-function filtrarAvaliacoes() {
-  const termo = document.getElementById("pesquisa").value;
-  carregarAvaliacoes(termo);
-}
+  window.editar = index => {
+    const dados = avaliacoes[index];
+    for (const key in dados) {
+      const el = document.getElementById(key);
+      if (el) el.value = dados[key];
+      if (key.startsWith('prej') && document.getElementById(key)) {
+        document.getElementById(key).checked = dados[key];
+      }
+    }
+    form.dataset.editando = index;
+  };
 
-function editarAvaliacao(index) {
-  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-  const a = avaliacoes[index];
+  window.copiar = index => {
+    const texto = montarTextoAvaliacao(avaliacoes[index]);
+    navigator.clipboard.writeText(texto).then(() => alert('Texto copiado com sucesso!'));
+  };
 
-  document.getElementById("nome").value = a.nome;
-  document.getElementById("documento").value = a.documento;
-  document.getElementById("endereco").value = a.endereco;
-  document.getElementById("dataHora").value = a.dataHora;
-
-  const preencherCampo = (campo, valor, idCheck) => {
-    if (valor === "prejudicado") {
-      document.getElementById(idCheck).checked = true;
-      document.getElementById(campo).value = "";
-    } else {
-      document.getElementById(campo).value = valor;
-      document.getElementById(idCheck).checked = false;
+  window.excluir = index => {
+    if (confirm('Deseja realmente excluir esta avaliação?')) {
+      avaliacoes.splice(index, 1);
+      salvarLocalStorage();
+      renderAvaliacoes();
     }
   };
 
-  preencherCampo("pressao", a.pressao, "pressaoPrejudicado");
-  preencherCampo("frequencia", a.frequencia, "frequenciaPrejudicado");
-  preencherCampo("saturacao", a.saturacao, "saturacaoPrejudicado");
-  preencherCampo("respiracao", a.respiracao, "respiracaoPrejudicado");
-  preencherCampo("glasgow", a.glasgow, "glasgowPrejudicado");
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const dados = {
+      nome: getInput('nome').value,
+      documento: getInput('documento').value,
+      endereco: getInput('endereco').value,
+      pressao: getInput('pressao').value,
+      frequencia: getInput('frequencia').value,
+      saturacao: getInput('saturacao').value,
+      respiracao: getInput('respiracao').value,
+      glasgow: getInput('glasgow').value,
+      observacao: getInput('observacao').value,
+      medicoRegulador: getInput('medicoRegulador').value,
+      senha: getInput('senha').value,
+      unidadeSaude: getInput('unidadeSaude').value,
+      referenciaAdmissao: getRadioValue('referenciaAdmissao'),
+      nomeAdmitiu: getInput('nomeAdmitiu').value,
+      prejPressao: getCheckbox('prejPressao'),
+      prejFrequencia: getCheckbox('prejFrequencia'),
+      prejSaturacao: getCheckbox('prejSaturacao'),
+      prejRespiracao: getCheckbox('prejRespiracao')
+    };
 
-  document.getElementById("observacao").value = a.observacao;
+    if (form.dataset.editando) {
+      avaliacoes[form.dataset.editando] = dados;
+      delete form.dataset.editando;
+    } else {
+      avaliacoes.push(dados);
+    }
 
-  avaliacoes.splice(index, 1);
-  localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
-  carregarAvaliacoes();
-}
+    salvarLocalStorage();
+    renderAvaliacoes();
+    limparFormulario();
+    mensagemSucesso.classList.remove('oculto');
+    setTimeout(() => mensagemSucesso.classList.add('oculto'), 2000);
+  });
 
-function excluirAvaliacao(index) {
-  if (!confirm("Deseja excluir esta avaliação?")) return;
-
-  const avaliacoes = JSON.parse(localStorage.getItem("avaliacoes") || "[]");
-  avaliacoes.splice(index, 1);
-  localStorage.setItem("avaliacoes", JSON.stringify(avaliacoes));
-  carregarAvaliacoes();
-}
-
-function copiarEvolucao(index) {
-  const a = JSON.parse(localStorage.getItem("avaliacoes") || "[]")[index];
-  const texto = 
-`🧍‍♂️ Nome: ${a.nome}
-🪪 Documento: ${a.documento}
-📍 Endereço: ${a.endereco}
-🕐 Data/Hora: ${a.dataHora}
-
-🩺 Pressão: ${a.pressao}
-❤️ Frequência: ${a.frequencia}
-🫁 Saturação: ${a.saturacao}
-💨 Respiração: ${a.respiracao}
-🧠 Glasgow: ${a.glasgow}
-
-📝 Observações:
-${a.observacao}`;
-
-  navigator.clipboard.writeText(texto).then(() => alert("Evolução copiada para área de transferência!"));
-}
+  campoPesquisa.addEventListener('input', renderAvaliacoes);
+  renderAvaliacoes();
+});
