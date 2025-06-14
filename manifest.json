@@ -1,10 +1,12 @@
 {
-  "name": "Avaliação de Vítima",
-  "short_name": "Avaliacao",
-  "start_url": ".",
+  "name": "Avaliador Pré-Hospitalar",
+  "short_name": "Avaliação PH",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#0d6efd",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1e88e5",
+  "orientation": "portrait",
+  "scope": "./",
   "icons": [
     {
       "src": "icon-192.png",
