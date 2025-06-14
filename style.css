@@ -57,6 +57,17 @@ input[type="checkbox"] {
   margin-left: 5px;
 }
 
+input[type="radio"] {
+  margin-right: 5px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
 textarea {
   resize: vertical;
 }
