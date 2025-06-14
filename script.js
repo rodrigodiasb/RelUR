@@ -1,139 +1,151 @@
-let avaliacoes = JSON.parse(localStorage.getItem('avaliacoes')) || [];
-let editandoIndex = null;
+// script.js
 
-document.addEventListener("DOMContentLoaded", () => {
-  atualizarListaAvaliacoes();
-});
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.querySelector('form');
+  const listaAvaliacoes = document.getElementById('lista-avaliacoes');
+  const mensagemSucesso = document.getElementById('mensagem-sucesso');
+  const campoPesquisa = document.getElementById('pesquisa');
 
-function formatarCPFouDoc(valor) {
-  const cpfLimpo = valor.replace(/\D/g, '');
-  if (cpfLimpo.length === 11) {
-    return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  }
-  return valor;
-}
-
-function salvarAvaliacao() {
-  const data = new Date();
-  const horario = data.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  const dados = {
-    nome: document.getElementById('nome').value.trim(),
-    documento: formatarCPFouDoc(document.getElementById('documento').value),
-    endereco: document.getElementById('endereco').value.trim(),
-    protocolo: document.getElementById('protocolo').value.trim(),
-    pressao: document.getElementById('prej_pressao').checked ? 'prejudicado' : document.getElementById('pressao').value,
-    frequencia: document.getElementById('prej_frequencia').checked ? 'prejudicado' : document.getElementById('frequencia').value,
-    saturacao: document.getElementById('prej_saturacao').checked ? 'prejudicado' : document.getElementById('saturacao').value,
-    respiracao: document.getElementById('prej_respiracao').checked ? 'prejudicado' : document.getElementById('respiracao').value,
-    glasgow: document.getElementById('glasgow').value,
-    observacao: document.getElementById('observacao').value.trim(),
-    regulador: document.getElementById('regulador').value.trim(),
-    senha: document.getElementById('senha').value.trim(),
-    unidade: document.getElementById('unidade').value.trim(),
-    admissao: {
-      tipo: document.querySelector('input[name="admissao_tipo"]:checked')?.value || '',
-      nome: document.getElementById('admitido_nome').value.trim(),
-      maca: document.getElementById('maca_retirada').checked,
-      horario
-    },
-    dataHora: new Date().toLocaleString()
+  const getInput = id => document.getElementById(id);
+  const getCheckbox = id => document.getElementById(id).checked;
+  const getRadioValue = name => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+  const setRadioValue = (name, value) => {
+    const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+    if (radio) radio.checked = true;
   };
 
-  if (editandoIndex !== null) {
-    avaliacoes[editandoIndex] = dados;
-    editandoIndex = null;
-  } else {
-    avaliacoes.push(dados);
-  }
+  let avaliacoes = JSON.parse(localStorage.getItem('avaliacoes')) || [];
 
-  localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
-  atualizarListaAvaliacoes();
-  document.getElementById('form-avaliacao').reset();
-  document.getElementById('mensagem-sucesso').classList.remove('oculto');
-  setTimeout(() => document.getElementById('mensagem-sucesso').classList.add('oculto'), 3000);
-}
-
-function atualizarListaAvaliacoes() {
-  const lista = document.getElementById('lista-avaliacoes');
-  lista.innerHTML = "";
-
-  avaliacoes.forEach((avaliacao, index) => {
-    const li = document.createElement('li');
-    li.innerHTML = `
-      <strong>${avaliacao.nome}</strong><br>
-      ${avaliacao.documento}<br>
-      ${avaliacao.endereco}
-      <div class="mt-2">
-        <button class="btn btn-sm btn-primary" onclick="editarAvaliacao(${index})">Editar</button>
-        <button class="btn btn-sm btn-secondary" onclick="copiarTexto(${index})">Copiar Avaliação</button>
-        <button class="btn btn-sm btn-danger" onclick="excluirAvaliacao(${index})">Excluir</button>
-      </div>
-    `;
-    lista.appendChild(li);
-  });
-}
-
-function editarAvaliacao(index) {
-  const a = avaliacoes[index];
-  document.getElementById('nome').value = a.nome;
-  document.getElementById('documento').value = a.documento;
-  document.getElementById('endereco').value = a.endereco;
-  document.getElementById('protocolo').value = a.protocolo;
-  document.getElementById('pressao').value = a.pressao !== 'prejudicado' ? a.pressao : '';
-  document.getElementById('frequencia').value = a.frequencia !== 'prejudicado' ? a.frequencia : '';
-  document.getElementById('saturacao').value = a.saturacao !== 'prejudicado' ? a.saturacao : '';
-  document.getElementById('respiracao').value = a.respiracao !== 'prejudicado' ? a.respiracao : '';
-  document.getElementById('glasgow').value = a.glasgow;
-  document.getElementById('observacao').value = a.observacao;
-  document.getElementById('regulador').value = a.regulador;
-  document.getElementById('senha').value = a.senha;
-  document.getElementById('unidade').value = a.unidade;
-  document.getElementById('admitido_nome').value = a.admissao.nome;
-  document.querySelector(`input[name="admissao_tipo"][value="${a.admissao.tipo}"]`)?.click();
-  document.getElementById('maca_retirada').checked = a.admissao.maca;
-
-  document.getElementById('prej_pressao').checked = a.pressao === 'prejudicado';
-  document.getElementById('prej_frequencia').checked = a.frequencia === 'prejudicado';
-  document.getElementById('prej_saturacao').checked = a.saturacao === 'prejudicado';
-  document.getElementById('prej_respiracao').checked = a.respiracao === 'prejudicado';
-
-  editandoIndex = index;
-}
-
-function excluirAvaliacao(index) {
-  if (confirm("Deseja realmente excluir esta avaliação?")) {
-    avaliacoes.splice(index, 1);
+  function salvarLocalStorage() {
     localStorage.setItem('avaliacoes', JSON.stringify(avaliacoes));
-    atualizarListaAvaliacoes();
+  }
+
+  function limparFormulario() {
+    form.reset();
+  }
+
+  function montarTextoAvaliacao(dados) {
+    const getCampo = (campo, sufixo = '', prejudicado = false) => {
+      return prejudicado ? `${campo}: prejudicado` : `${campo}: ${dados[campo] || ''}${sufixo}`;
+    };
+
+    const textoAdmissao = dados.macaRetirada
+      ? `Vítima admitida aos cuidados do ${dados.referenciaAdmissao || ''} ${dados.nomeAdmitiu || ''} e a maca foi retirada pelo mesmo(a) às ${new Date().toLocaleTimeString()}`
+      : `Vítima admitida aos cuidados do ${dados.referenciaAdmissao || ''} ${dados.nomeAdmitiu || ''}`;
+
+    return [
+      `Nome: ${dados.nome || ''}`,
+      `Documento: ${dados.documento || ''}`,
+      `Endereço: ${dados.endereco || ''}`,
+      `Protocolo: ${dados.protocolo || ''}`,
+      '',
+      getCampo('Pressao', '', dados.prejPressao),
+      getCampo('Frequencia', '', dados.prejFrequencia),
+      getCampo('Saturacao', '%', dados.prejSaturacao),
+      getCampo('Respiracao', '', dados.prejRespiracao),
+      `Glasgow: ${dados.glasgow || ''}`,
+      '',
+      `Observações: ${dados.observacao || ''}`,
+      '',
+      `Médico regulador: ${dados.medicoRegulador || ''}`,
+      `Senha: ${dados.senha || ''}`,
+      `Unidade de Saúde: ${dados.unidadeSaude || ''}`,
+      '',
+      textoAdmissao
+    ].join('\n');
+  }
+    const glasgowSelect = document.getElementById('glasgow');
+if (glasgowSelect) {
+  for (let i = 1; i <= 15; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = i;
+    glasgowSelect.appendChild(option);
   }
 }
 
-function copiarTexto(index) {
-  const a = avaliacoes[index];
+  function renderAvaliacoes() {
+    listaAvaliacoes.innerHTML = '';
+    const termo = campoPesquisa.value.toLowerCase();
 
-  const texto = 
-`Nome: ${a.nome}
-Documento: ${a.documento}
-Endereço: ${a.endereco}
-Protocolo: ${a.protocolo}
+    avaliacoes.filter(av => av.nome.toLowerCase().includes(termo)).forEach((dados, index) => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <strong>${dados.nome}</strong><br>
+        <button onclick="editar(${index})">Editar</button>
+        <button onclick="copiar(${index})">Copiar Avaliação</button>
+        <button onclick="excluir(${index})">Excluir</button>
+      `;
+      listaAvaliacoes.appendChild(li);
+    });
+  }
 
-Pressão: ${a.pressao}
-Frequência: ${a.frequencia}
-Saturação: ${a.saturacao}
-Respiração: ${a.respiracao}
-Glasgow: ${a.glasgow}
+  window.editar = index => {
+    const dados = avaliacoes[index];
+    for (const key in dados) {
+      const el = document.getElementById(key);
+      if (el && key !== 'referenciaAdmissao') el.value = dados[key];
+      if (key.startsWith('prej') && document.getElementById(key)) {
+        document.getElementById(key).checked = dados[key];
+      }
+    }
+    setRadioValue('referenciaAdmissao', dados.referenciaAdmissao);
+    getInput('macaRetirada').checked = dados.macaRetirada || false;
+    form.dataset.editando = index;
+  };
 
-Observação:
-${a.observacao}
+  window.copiar = index => {
+    const texto = montarTextoAvaliacao(avaliacoes[index]);
+    navigator.clipboard.writeText(texto).then(() => alert('Texto copiado com sucesso!'));
+  };
 
-Médico Regulador: ${a.regulador}
-Senha: ${a.senha}
-Unidade de Saúde: ${a.unidade}
+  window.excluir = index => {
+    if (confirm('Deseja realmente excluir esta avaliação?')) {
+      avaliacoes.splice(index, 1);
+      salvarLocalStorage();
+      renderAvaliacoes();
+    }
+  };
 
-Vítima admitida aos cuidados do ${a.admissao.tipo} ${a.admissao.nome}${a.admissao.maca ? ` e a maca foi retirada pelo mesmo(a) às ${a.admissao.horario}` : ''}`;
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const dados = {
+      nome: getInput('nome').value,
+      documento: getInput('documento').value,
+      endereco: getInput('endereco').value,
+      protocolo: getInput('protocolo').value,
+      pressao: getInput('pressao').value,
+      frequencia: getInput('frequencia').value,
+      saturacao: getInput('saturacao').value,
+      respiracao: getInput('respiracao').value,
+      glasgow: getInput('glasgow').value,
+      observacao: getInput('observacao').value,
+      medicoRegulador: getInput('medicoRegulador').value,
+      senha: getInput('senha').value,
+      unidadeSaude: getInput('unidadeSaude').value,
+      referenciaAdmissao: getRadioValue('referenciaAdmissao'),
+      nomeAdmitiu: getInput('nomeAdmitiu').value,
+      macaRetirada: getCheckbox('macaRetirada'),
+      prejPressao: getCheckbox('prejPressao'),
+      prejFrequencia: getCheckbox('prejFrequencia'),
+      prejSaturacao: getCheckbox('prejSaturacao'),
+      prejRespiracao: getCheckbox('prejRespiracao')
+    };
 
-  navigator.clipboard.writeText(texto).then(() => {
-    alert("Texto copiado com sucesso!");
+    if (form.dataset.editando) {
+      avaliacoes[form.dataset.editando] = dados;
+      delete form.dataset.editando;
+    } else {
+      avaliacoes.push(dados);
+    }
+
+    salvarLocalStorage();
+    renderAvaliacoes();
+    limparFormulario();
+    mensagemSucesso.classList.remove('oculto');
+    setTimeout(() => mensagemSucesso.classList.add('oculto'), 2000);
   });
-}
+
+  campoPesquisa.addEventListener('input', renderAvaliacoes);
+  renderAvaliacoes();
+});
